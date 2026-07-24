@@ -9,6 +9,7 @@ import '../widgets/confession_dialog.dart';
 import '../widgets/day_detail_dialog.dart';
 import '../widgets/day_node_widget.dart';
 import '../widgets/helper_avatar_widget.dart';
+import '../widgets/personalization_dialog.dart';
 import '../widgets/snake_path_painter.dart';
 import '../widgets/starry_background.dart';
 
@@ -24,6 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   DateTime? _startDate;
   bool _devModeUnlockAll = false;
+  String _currentTheme = 'cosmic';
+  String _customTitle = 'ASCENSO AL DÍA 30';
+
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -52,6 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     _devModeUnlockAll = prefs.getBool('encantario_dev_mode') ?? false;
+    _currentTheme = prefs.getString('encantario_theme_id') ?? 'cosmic';
+    _customTitle = prefs.getString('encantario_custom_title') ?? 'ASCENSO AL DÍA 30';
 
     final String? savedData = prefs.getString('encantario_progress');
     if (savedData != null) {
@@ -240,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0416),
       body: StarryBackground(
+        themeId: _currentTheme,
         child: Stack(
           children: [
             SafeArea(
@@ -321,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader(double progressPercent) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
       decoration: BoxDecoration(
         color: const Color(0xFF1B0D33).withValues(alpha: 0.92),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
@@ -344,15 +351,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        const Flexible(
+                        Flexible(
                           child: Text(
-                            'ASCENSO AL DÍA 30',
+                            _customTitle,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.amber,
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ),
@@ -386,6 +393,31 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Row(
                 children: [
+                  // Personalizar Tema
+                  IconButton(
+                    icon: const Icon(Icons.palette_rounded, color: Colors.purpleAccent, size: 20),
+                    tooltip: 'Personalizar Tema y Nombres',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => PersonalizationDialog(
+                          currentTheme: _currentTheme,
+                          currentTitle: _customTitle,
+                          onSave: (newTheme, newTitle) async {
+                            final prefs = await SharedPreferences.getInstance();
+                            setState(() {
+                              _currentTheme = newTheme;
+                              _customTitle = newTitle;
+                            });
+                            await prefs.setString('encantario_theme_id', newTheme);
+                            await prefs.setString('encantario_custom_title', newTitle);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Toggle Dev Mode
                   IconButton(
                     icon: Icon(
                       _devModeUnlockAll ? Icons.lock_open_rounded : Icons.lock_clock_rounded,
@@ -413,8 +445,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     },
                   ),
+
+                  // Reiniciar
                   IconButton(
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.amber),
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.amber, size: 20),
                     tooltip: 'Reiniciar Progreso',
                     onPressed: () {
                       showDialog(

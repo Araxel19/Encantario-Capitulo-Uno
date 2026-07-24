@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -78,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_scrollController.hasClients) {
         final int targetDay = _unlockedMaxDay;
         final int visualIndex = 30 - targetDay;
-        final double targetY = visualIndex * 110.0;
+        final double targetY = visualIndex * 155.0;
         _scrollController.animateTo(
           targetY.clamp(0.0, _scrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 1000),
@@ -117,6 +118,42 @@ class _HomeScreenState extends State<HomeScreen> {
     final int nextSequentialDay = maxCompletedDay + 1;
     final int calendarLimit = _calendarAllowedDay;
     return nextSequentialDay < calendarLimit ? nextSequentialDay : calendarLimit;
+  }
+
+  List<Offset> _getOrganicPathPoints(int totalNodes, double screenWidth, double rowHeight) {
+    final Random rng = Random(777); // Semilla fija para consistencia visual
+    final List<double> xRatiosFromDay1To30 = List.filled(totalNodes, 0.5);
+    xRatiosFromDay1To30[0] = 0.5; // Día 1 comienza en el centro exacto
+
+    double currentX = 0.5;
+    double dir = 1.0;
+
+    for (int d = 1; d < totalNodes; d++) {
+      final double step = (rng.nextDouble() * 0.16 + 0.14) * dir;
+      currentX += step;
+
+      if (currentX > 0.82) {
+        currentX = 0.82 - (rng.nextDouble() * 0.06);
+        dir = -1.0;
+      } else if (currentX < 0.18) {
+        currentX = 0.18 + (rng.nextDouble() * 0.06);
+        dir = 1.0;
+      } else if (rng.nextDouble() < 0.32) {
+        dir *= -1.0;
+      }
+
+      xRatiosFromDay1To30[d] = currentX.clamp(0.18, 0.82);
+    }
+
+    final List<Offset> points = [];
+    for (int i = 0; i < totalNodes; i++) {
+      final double y = (i * rowHeight) + 80.0;
+      final int dayIndex = (totalNodes - 1) - i;
+      final double xRatio = xRatiosFromDay1To30[dayIndex];
+      final double x = screenWidth * xRatio;
+      points.add(Offset(x, y));
+    }
+    return points;
   }
 
   void _onNodeTap(DayChallenge challenge, bool isUnlocked) {
@@ -208,26 +245,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final double screenWidth = constraints.maxWidth;
-                        const double rowHeight = 110.0;
+                        const double rowHeight = 155.0;
                         final int totalNodes = displayChallenges.length;
 
-                        final List<Offset> points = [];
-                        for (int i = 0; i < totalNodes; i++) {
-                          final double y = (i * rowHeight) + 70.0;
-                          double xRatio;
-                          if (i % 4 == 0) {
-                            xRatio = 0.5;
-                          } else if (i % 4 == 1) {
-                            xRatio = 0.75;
-                          } else if (i % 4 == 2) {
-                            xRatio = 0.5;
-                          } else {
-                            xRatio = 0.25;
-                          }
-
-                          final double x = screenWidth * xRatio;
-                          points.add(Offset(x, y));
-                        }
+                        final List<Offset> points = _getOrganicPathPoints(
+                          totalNodes,
+                          screenWidth,
+                          rowHeight,
+                        );
 
                         return SingleChildScrollView(
                           controller: _scrollController,

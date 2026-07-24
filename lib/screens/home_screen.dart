@@ -79,10 +79,18 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_scrollController.hasClients) {
         final int targetDay = _unlockedMaxDay;
         final int visualIndex = 30 - targetDay;
-        final double targetY = visualIndex * 155.0;
+        const double rowHeight = 155.0;
+
+        final double nodeY = (visualIndex * rowHeight) + 80.0;
+        final double viewPortHeight = MediaQuery.of(context).size.height;
+        final double targetY = nodeY - (viewPortHeight / 2);
+
+        final double maxScroll = _scrollController.position.maxScrollExtent;
+        final double finalScroll = targetY.clamp(0.0, maxScroll);
+
         _scrollController.animateTo(
-          targetY.clamp(0.0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 1000),
+          finalScroll,
+          duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutCubic,
         );
       }
